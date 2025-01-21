@@ -12,10 +12,10 @@ inputs:
     required: true
   registry-password:
     description: "password of the registry to pull images"
-    required: false
+    required: true
   docker-host:
     description: "docker host string"
-    required: false
+    required: true
   pull-images:
     description: "force pull before deploy"
     required: false
