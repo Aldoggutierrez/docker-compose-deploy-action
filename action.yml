@@ -24,6 +24,10 @@ inputs:
     description: "name of the docker file"
     required: false
     default: "docker-compose.yml"
+  docker-registry:
+    required: false
+  compose-project-name:
+    required: false
 runs:
   using: "composite"
   steps:
@@ -39,7 +43,7 @@ runs:
       if: ${{ inputs.registry-username != '' && inputs.registry-password != ''}}
       uses: docker/login-action@v3
       with:
-        registry: harbor.enlacebooking.travel
+        registry: ${{ inputs.docker-registry }}
         username: ${{ inputs.registry-username }}
         password: ${{ inputs.registry-password }}
     - name: pull images
@@ -53,3 +57,4 @@ runs:
       shell: bash
       env:
         DOCKER_HOST: ${{inputs.docker-host}}
+        COMPOSE_PROJECT_NAME: ${{inputs.compose-project-name}}
