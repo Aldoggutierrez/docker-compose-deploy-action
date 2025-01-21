@@ -1,18 +1,55 @@
-name: 'Hello World'
-description: 'Greet someone'
+name: "Deploy a docker compose file remotely"
+description: "Action to deploy conainers inside a docker compose files via ssh docker host"
 inputs:
-  who-to-greet:  # id of input
-    description: 'Who to greet'
+  ssh-private-key:
+    description: "ssh private key to use"
     required: true
-    default: 'World'
-outputs:
-  random-number:
-    description: "Random number"
-    value: ${{ steps.random-number-generator.outputs.random-number }}
+  ssh-host:
+    description: "ssh host to connect"
+    required: true
+  registry-username:
+    description: "username of the registry to pull images"
+    required: true
+  registry-password:
+    description: "password of the registry to pull images"
+    required: false
+  docker-host:
+    description: "docker host string"
+    required: false
+  pull-images:
+    description: "force pull before deploy"
+    required: false
+    default: 'false'
+  docker-file:
+    description: "name of the docker file"
+    required: false
+    default: "docker-compose.yml"
 runs:
   using: "composite"
   steps:
-    - name: Run goodbye.sh
-      run: goodbye.sh
+    - name: Create SSH key
+      run: |
+        install -m 600 -D /dev/null ~/.ssh/id_rsa
+        echo "${{ inputs.ssh-private-key }}" > ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ inputs.ssh-host }} > ~/.ssh/known_hosts
       shell: bash
-
+    - name: checkout repository
+      uses: actions/checkout@v4
+    - name: Login to Registry
+      if: ${{ inputs.registry-username != '' && inputs.registry-password != ''}}
+      uses: docker/login-action@v3
+      with:
+        registry: harbor.enlacebooking.travel
+        username: ${{ inputs.registry-username }}
+        password: ${{ inputs.registry-password }}
+    - name: pull images
+      if: ${{ inputs.pull-images == 'true'}}
+      run: docker compose -f ${{ inputs.docker-file }} pull
+      shell: bash
+      env:
+        DOCKER_HOST: ${{inputs.docker-host}}
+    - name: deploy docker compose file
+      run: docker compose -f ${{ inputs.docker-file }} up -d
+      shell: bash
+      env:
+        DOCKER_HOST: ${{inputs.docker-host}}
